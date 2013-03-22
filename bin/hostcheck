@@ -1,0 +1,49 @@
+#!/bin/bash
+
+smtp_server="mail.d-heaven.com:587"
+send_from="niuminguo@d-heaven.com"
+send_to="cuihongbao@d-heaven.com dengchunming@d-heaven.com liguanping@d-heaven.com liangxingfei@d-heaven.com"
+send_cc="niuminguo@d-heaven.com"
+send_user="niuminguo"
+send_password="P@ssw0rd"
+
+mail=/usr/hostcheck/sbin/sendEmail
+ping=/usr/hostcheck/sbin/check_ping
+
+send_email()
+{
+$mail -s $smtp_server -f $send_from -t $send_to -cc "$send_cc" -u "${1} is dead " -m "RT" -xu $send_user -xp $send_password >/dev/null
+
+}
+
+log()
+{
+	echo -e "$(date +'%Y-%m-%d')\t$(date +'%H:%M:%S')\t$1" >> /var/log/hostcheck.log
+}
+	
+while true
+do
+	while read line
+	do
+		if [ X"$line" = X ];then
+			continue
+		fi
+
+		if [ "${line:0:1}" = "#" ];then
+			continue
+		fi
+
+		if  $ping -H "$line" -w 10,20% -c 40,50% > /dev/null 2>&1
+		then
+			log "${line} is alive"
+		else
+			log "${line} is dead"
+			send_email "${line} is dead"
+		fi
+		sleep 1
+
+	done < /etc/hostcheck.ini
+sleep 60
+done
+
+	
